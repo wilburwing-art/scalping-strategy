@@ -4,13 +4,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # Forex Scalping Strategy Project
 
-This is a Python-based automated forex scalping trading strategy that uses the OANDA v20 REST API for executing trades. The strategy performs technical analysis on currency pairs and executes short-term trades based on indicators like RSI, moving averages, and ATR.
+This is a Python-based automated forex scalping trading strategy that uses the OANDA v20 REST API for executing trades. The project includes both traditional technical analysis and an advanced **multi-agent AI system** powered by pydantic_ai and OpenAI for generating high-confidence trading signals.
 
 ## Project Structure
 
-- `scalping-strategy.py`: Main trading strategy implementation containing the `ScalpingStrategy` class
-- `v20.conf`: Configuration file for OANDA API credentials (not included in repo - user must create)
-- `scalping_strategy.log`: Log file generated during strategy execution
+### Core Files
+- `scalping_strategy.py`: Base trading strategy with traditional technical analysis
+- `enhanced_scalping_strategy.py`: AI-enhanced strategy integrating multi-agent intelligence system
+- `trading_agents.py`: Multi-agent AI system using pydantic_ai for market intelligence, technical analysis, risk assessment, and coordination
+
+### Configuration & Examples
+- `v20.conf`: OANDA API credentials (not in repo - user must create from config.example.ini)
+- `config.example.ini`: Example configuration file with OANDA and OpenAI settings
+- `example_agent_usage.py`: Examples demonstrating how to use the agent system
+
+### Generated Files
+- `scalping_strategy.log`: Traditional strategy execution log
+- `enhanced_scalping_strategy.log`: Enhanced strategy with AI agents execution log
 
 ## Core Architecture
 
@@ -32,51 +42,141 @@ Main class implementing the trading algorithm with key methods:
 5. Execute trades with automatic stop loss and take profit
 6. Monitor active trades and manage positions
 
+### Multi-Agent Intelligence System
+
+The enhanced strategy incorporates a sophisticated AI-powered multi-agent system that provides comprehensive market analysis:
+
+**Agent Architecture:**
+1. **MarketIntelligenceAgent**: Analyzes real-time news, sentiment, economic events, and geopolitical factors
+2. **TechnicalAnalysisAgent**: Performs multi-timeframe analysis with indicator confluence and pattern recognition
+3. **RiskAssessmentAgent**: Handles position sizing, correlation analysis, and portfolio risk management
+4. **CoordinatorAgent**: Orchestrates all agents, resolves conflicts, and makes final trading decisions
+
+**Decision Framework:**
+- Market Intelligence Weight: 30%
+- Technical Analysis Weight: 40%
+- Risk Assessment Weight: 30%
+- Minimum confidence threshold: 0.6 (configurable)
+
+**Key Features:**
+- Parallel agent execution for fast analysis
+- Multi-timeframe confirmation
+- Real-time news and sentiment integration
+- Sophisticated risk management with correlation checks
+- Comprehensive reasoning for every decision
+- Fallback to traditional analysis if agent confidence is low
+
+**Data Models:**
+All agent communications use strongly-typed Pydantic models for reliability:
+- `MarketIntelligence`: Sentiment scores, news impact, economic events
+- `TechnicalAnalysis`: Signals, entry/exit levels, trend strength
+- `RiskAssessment`: Position sizing, risk/reward ratios, warnings
+- `TradingRecommendation`: Final decision with confidence scores
+
 ## Common Commands
 
-### Running the Strategy
+### Running the Traditional Strategy
 ```bash
 # Run with default settings (practice environment, 300s intervals)
-uv run scalping-strategy.py
+uv run scalping_strategy.py
 
 # Run with custom parameters
-uv run scalping-strategy.py --config v20.conf --env practice --interval 120 --max-trades 5 --runtime 7200
+uv run scalping_strategy.py --config v20.conf --env practice --interval 120 --max-trades 5 --runtime 7200
 
 # Run in live environment (requires live OANDA account)
-uv run scalping-strategy.py --env live
+uv run scalping_strategy.py --env live
+```
+
+### Running the Enhanced Strategy (with AI Agents)
+```bash
+# Run with AI agents enabled (requires OPENAI_API_KEY environment variable)
+export OPENAI_API_KEY="sk-..."
+uv run enhanced_scalping_strategy.py
+
+# Run with custom OpenAI API key
+uv run enhanced_scalping_strategy.py --openai-key "sk-..."
+
+# Run with custom agent model (e.g., gpt-4o-mini for lower cost)
+uv run enhanced_scalping_strategy.py --agent-model gpt-4o-mini
+
+# Run with custom confidence threshold
+uv run enhanced_scalping_strategy.py --min-confidence 0.7
+
+# Disable AI agents (fallback to traditional analysis only)
+uv run enhanced_scalping_strategy.py --disable-agents
+
+# Full example with all parameters
+uv run enhanced_scalping_strategy.py \
+  --config v20.conf \
+  --env practice \
+  --interval 300 \
+  --max-trades 3 \
+  --runtime 3600 \
+  --openai-key "sk-..." \
+  --agent-model gpt-4o \
+  --min-confidence 0.6
+```
+
+### Running Agent Examples
+```bash
+# View example usage patterns
+uv run example_agent_usage.py
+
+# Test individual agent functionality
+export OPENAI_API_KEY="sk-..."
+uv run example_agent_usage.py
 ```
 
 ### Dependencies
-The script requires these Python packages:
+The project requires these Python packages:
+
+**Core Trading:**
 - `pandas`, `numpy`: Data analysis and calculations
 - `requests`: HTTP requests
 - `v20`: OANDA v20 API client
-- `configparser`: Configuration file parsing
-- `dateutil`: Date parsing utilities
+- `python-dateutil`: Date parsing utilities
 
-Install dependencies:
+**AI Agent System:**
+- `pydantic-ai`: Agent orchestration framework
+- `openai`: OpenAI API client for LLM agents
+
+Install all dependencies:
 ```bash
-uv add pandas numpy requests v20-python python-dateutil
+uv add pydantic-ai openai pandas numpy requests v20 python-dateutil
 ```
 
 ## Configuration Requirements
 
-### OANDA Configuration File (v20.conf)
-Must create a configuration file with OANDA API credentials:
+### Configuration File (v20.conf)
+Create from `config.example.ini` template with your credentials:
 
 ```ini
 [practice]
 hostname = api-fxpractice.oanda.com
-token = YOUR_PRACTICE_TOKEN
+token = YOUR_PRACTICE_OANDA_TOKEN
 account_id = YOUR_PRACTICE_ACCOUNT_ID
 
 [live]
-hostname = api-fxtrade.oanda.com  
-token = YOUR_LIVE_TOKEN
+hostname = api-fxtrade.oanda.com
+token = YOUR_LIVE_OANDA_TOKEN
 account_id = YOUR_LIVE_ACCOUNT_ID
+
+[openai]
+# Optional: Can also use OPENAI_API_KEY environment variable
+api_key = YOUR_OPENAI_API_KEY
+model = gpt-4o
+min_confidence = 0.6
 ```
 
 **Security Note**: The v20.conf file contains API credentials and should never be committed to version control.
+
+### Environment Variables
+Alternatively, set credentials via environment variables:
+```bash
+export OPENAI_API_KEY="sk-..."
+export OANDA_TOKEN="your-oanda-token"
+export OANDA_ACCOUNT_ID="your-account-id"
+```
 
 ## Strategy Parameters
 

@@ -205,3 +205,23 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Trading Strategy Specific
+# CRITICAL: Never commit API credentials
+v20.conf
+*.conf
+!config.example.ini
+
+# Trading logs and data
+*.log
+scalping_strategy.log
+enhanced_scalping_strategy.log
+backtest_results/
+historical_data/
+trade_journal/
+
+# Temporary files
+.DS_Store
+*.swp
+*.swo
+*~
