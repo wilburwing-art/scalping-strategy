@@ -223,6 +223,67 @@ uv run test_trade_journal.py
 
 **Why This Matters**: "What gets measured gets managed." Trade journaling is the foundation for systematic improvement. Identify what's working, what's not, and optimize over time.
 
+### Run Sentiment-Aware Strategy (Phase 3) ✅ NEW
+
+Social sentiment analysis from Twitter, Reddit, and StockTwits integrated with AI trading agents:
+
+```bash
+# Set up API keys (optional - StockTwits works without auth)
+export OPENAI_API_KEY="sk-..."           # Required for sentiment classification
+export TWITTER_BEARER_TOKEN="..."       # Optional but recommended
+export REDDIT_CLIENT_ID="..."            # Optional but recommended
+export REDDIT_CLIENT_SECRET="..."       # Optional
+
+# Run with sentiment analysis
+uv run sentiment_aware_strategy.py --env practice
+
+# Momentum mode (follow sentiment, default)
+uv run sentiment_aware_strategy.py --env practice --sentiment-weight 0.20
+
+# Contrarian mode (fade extreme sentiment)
+uv run sentiment_aware_strategy.py --env practice --contrarian
+
+# Disable sentiment (fallback to technical only)
+uv run sentiment_aware_strategy.py --env practice --disable-sentiment
+
+# Test sentiment analyzer
+uv run test_sentiment.py
+
+# Test with mock data (no APIs needed)
+uv run test_sentiment.py --mock
+```
+
+**API Keys**:
+- **Twitter**: [developer.twitter.com](https://developer.twitter.com/) - Free tier: 500k tweets/month
+- **Reddit**: [reddit.com/prefs/apps](https://www.reddit.com/prefs/apps) - Free, unlimited
+- **StockTwits**: Public API (no key needed)
+
+**Features**:
+- 🐦 Twitter sentiment from forex discussions
+- 📱 Reddit sentiment from r/forex and trading subreddits
+- 📊 StockTwits trader sentiment (pre-classified)
+- 🤖 OpenAI GPT-4o-mini for accurate sentiment classification
+- 📈 Two modes: **Momentum** (follow sentiment) or **Contrarian** (fade extremes)
+- 💾 15-minute caching to reduce API calls
+- 🎯 Volume percentile tracking (detect unusual buzz)
+
+**Trading Signals**:
+- **High Conviction**: Strong sentiment + high volume = boost confidence
+- **Contrarian**: Extreme one-sided sentiment (>80% bull/bear) = fade the crowd
+- **Confirmation**: Sentiment aligns with technicals = higher position size
+- **Conflict**: Sentiment opposes technicals = reduce confidence or skip
+
+**Example Output**:
+```
+EUR_USD Sentiment: BULLISH (+0.62) - 47 mentions (82nd percentile)
+  Twitter: +0.68 (28 tweets)
+  Reddit: +0.54 (15 posts)
+  StockTwits: +0.61 (4 messages)
+  📈 High conviction sentiment confirms signal
+```
+
+**Why This Matters**: Retail sentiment can be a **powerful contrarian indicator**. When everyone's bullish, the smart money often sells. Social sentiment helps identify these extremes and avoid herd behavior. Research shows Twitter sentiment can predict intraday forex moves 30-60 minutes ahead.
+
 ---
 
 ## 🏗️ Architecture
@@ -322,7 +383,7 @@ Advanced intelligence features:
 
 - [x] Economic calendar integration (Trading Economics API) ✅
 - [x] Trade journaling and performance tracking ✅
-- [ ] Social sentiment analysis (Twitter, Reddit, StockTwits)
+- [x] Social sentiment analysis (Twitter, Reddit, StockTwits) ✅
 - [ ] Parameter optimization framework
 - [ ] Session filtering (avoid low-volume hours)
 - [ ] Correlation matrix (prevent over-exposure)
