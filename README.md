@@ -146,6 +146,83 @@ uv run scalping_strategy.py \
 
 **Note**: The base strategy (`scalping_strategy.py`) has known issues documented in `docs/CRITICAL_ANALYSIS.md`. Use for reference only until fixes are applied.
 
+### Run News-Aware Strategy (Phase 3) ✅ NEW
+
+The news-aware strategy blocks trades during high-impact economic events to avoid volatility spikes:
+
+```bash
+# Set up Trading Economics API key (free tier available)
+export TRADING_ECONOMICS_API_KEY="your_key_here"
+
+# Run with news filtering enabled
+uv run news_aware_strategy.py --env practice
+
+# Custom buffer times (default: 30min before, 60min after)
+uv run news_aware_strategy.py \
+  --env practice \
+  --buffer-before 45 \
+  --buffer-after 90 \
+  --interval 300 \
+  --max-trades 3
+
+# Check what events are being filtered
+tail -f news_aware_strategy.log
+```
+
+**Get Trading Economics API Key**: [https://tradingeconomics.com/analytics/api/](https://tradingeconomics.com/analytics/api/) (Free tier: 1,000 requests/month)
+
+**Features**:
+- 📅 Fetches upcoming economic events (NFP, FOMC, GDP, CPI, etc.)
+- 🛡️ Blocks trades 30min before / 60min after high-impact news
+- ⚡ Auto-refreshes calendar every hour
+- 📊 Logs critical events at startup
+- ✅ Graceful fallback if API unavailable
+
+**Why This Matters**: A single high-impact news event (e.g., Non-Farm Payrolls) can cause 100+ pip moves in seconds with 5-10x normal spreads. Avoiding just 2-3 bad news trades per month can improve returns by 3-5%.
+
+### Run Journaled Strategy (Phase 3) ✅ NEW
+
+Automatic trade journaling with comprehensive performance analytics:
+
+```bash
+# Run strategy with automatic journaling
+uv run journaled_strategy.py --env practice
+
+# Custom journal database
+uv run journaled_strategy.py --env practice --journal-db my_trades.db
+
+# View performance analytics
+uv run journal_analytics.py
+
+# Compare time periods
+uv run journal_analytics.py --compare --patterns
+
+# Export to CSV
+uv run journal_analytics.py --export trades.csv --days 90
+
+# Test journaling system
+uv run test_trade_journal.py
+```
+
+**Features**:
+- 📝 Logs every trade entry and exit automatically
+- 📊 Tracks indicators, market context, agent decisions
+- 📈 Performance analytics by session, instrument, confidence
+- 🎯 Identifies winning/losing patterns
+- 💾 SQLite backend (no external dependencies)
+- 📤 Export to CSV for Excel analysis
+
+**Analytics Included**:
+- Win rate, profit factor, Sharpe ratio
+- Average win/loss, expectancy per trade
+- Max drawdown, consecutive wins/losses
+- Performance by session (Asian, London, NY, Overlap)
+- Performance by instrument (EUR_USD, GBP_USD, etc.)
+- AI confidence correlation analysis
+- Cost breakdown (spread, slippage)
+
+**Why This Matters**: "What gets measured gets managed." Trade journaling is the foundation for systematic improvement. Identify what's working, what's not, and optimize over time.
+
 ---
 
 ## 🏗️ Architecture
@@ -239,16 +316,18 @@ Critical fixes needed before live trading:
 - [ ] Pip value calculation fixes
 - [ ] Leverage limits (cap at 10:1, not broker max)
 
-### 📋 Planned (Phase 3)
+### 🚧 In Progress (Phase 3)
 
-- [ ] Economic calendar integration (Trading Economics API)
+Advanced intelligence features:
+
+- [x] Economic calendar integration (Trading Economics API) ✅
+- [x] Trade journaling and performance tracking ✅
 - [ ] Social sentiment analysis (Twitter, Reddit, StockTwits)
+- [ ] Parameter optimization framework
 - [ ] Session filtering (avoid low-volume hours)
 - [ ] Correlation matrix (prevent over-exposure)
-- [ ] Trade journaling and performance tracking
-- [ ] Parameter optimization framework
 
-See `docs/EXECUTIVE_SUMMARY.md` for detailed roadmap.
+See `docs/PHASE_3_IMPLEMENTATION_PLAN.md` for detailed Phase 3 plan.
 
 ---
 
