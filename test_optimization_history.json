@@ -1,0 +1,92 @@
+[
+  {
+    "timestamp": "2025-11-09T20:44:59.395300",
+    "instrument": "EUR_USD",
+    "start_date": "2025-05-13",
+    "end_date": "2025-11-09",
+    "optimization_metric": "sharpe_ratio",
+    "final_params": {
+      "rsi_period": 10,
+      "rsi_oversold": 30,
+      "rsi_overbought": 70,
+      "atr_period": 14,
+      "atr_multiplier": 1.5,
+      "ma_short_period": 20,
+      "ma_long_period": 50,
+      "risk_percent": 1.0,
+      "reward_risk_ratio": 1.5,
+      "min_confidence": 0.5,
+      "min_volatility": 0.0005,
+      "max_volatility": 0.005
+    },
+    "performance": {
+      "avg_sharpe_ratio": 2.63962352421425,
+      "avg_win_rate": 0.538888888888889,
+      "avg_profit_factor": 1.6042368905870044,
+      "avg_max_drawdown_percent": 3.8633420477287332,
+      "total_test_trades": 33,
+      "consistency": 3.431390789451519,
+      "num_periods": 2
+    }
+  },
+  {
+    "timestamp": "2025-11-09T20:44:59.600778",
+    "instrument": "EUR_USD",
+    "start_date": "2025-05-13",
+    "end_date": "2025-11-09",
+    "optimization_metric": "win_rate",
+    "final_params": {
+      "rsi_period": 10,
+      "rsi_oversold": 30,
+      "rsi_overbought": 70,
+      "atr_period": 14,
+      "atr_multiplier": 1.5,
+      "ma_short_period": 20,
+      "ma_long_period": 50,
+      "risk_percent": 1.0,
+      "reward_risk_ratio": 1.5,
+      "min_confidence": 0.5,
+      "min_volatility": 0.0005,
+      "max_volatility": 0.005
+    },
+    "performance": {
+      "avg_win_rate": 0.5445632798573975,
+      "avg_profit_factor": 1.609494741358673,
+      "avg_sharpe_ratio": 2.699992859280101,
+      "avg_max_drawdown_percent": 3.828872952963326,
+      "total_test_trades": 47,
+      "consistency": 0.03602742055509401,
+      "num_periods": 3
+    }
+  },
+  {
+    "timestamp": "2025-11-09T20:44:59.874817",
+    "instrument": "EUR_USD",
+    "start_date": "2025-05-13",
+    "end_date": "2025-11-09",
+    "optimization_metric": "profit_factor",
+    "final_params": {
+      "rsi_period": 10,
+      "rsi_oversold": 30,
+      "rsi_overbought": 70,
+      "atr_period": 14,
+      "atr_multiplier": 1.5,
+      "ma_short_period": 20,
+      "ma_long_period": 50,
+      "risk_percent": 1.0,
+      "reward_risk_ratio": 1.5,
+      "min_confidence": 0.5,
+      "min_volatility": 0.0005,
+      "max_volatility": 0.005
+    },
+    "performance": {
+      "avg_profit_factor": 1.609494741358673,
+      "avg_win_rate": 0.5445632798573975,
+      "avg_sharpe_ratio": 2.699992859280101,
+      "avg_max_drawdown_percent": 3.828872952963326,
+      "total_test_trades": 47,
+      "consistency": 0.7274805531130942,
+      "num_periods": 3
+    }
+  }
+]
