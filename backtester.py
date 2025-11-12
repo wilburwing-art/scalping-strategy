@@ -507,7 +507,16 @@ class Backtester:
                 "final_balance": self.current_balance,
                 "total_return": 0.0,
                 "total_trades": 0,
+                "winning_trades": 0,
+                "losing_trades": 0,
                 "win_rate": 0.0,
+                "avg_win": 0.0,
+                "avg_loss": 0.0,
+                "sharpe_ratio": 0.0,
+                "max_drawdown": 0.0,
+                "profit_factor": 0.0,
+                "total_costs": 0.0,
+                "avg_hold_days": 0.0,
                 "error": "No trades executed",
             }
 

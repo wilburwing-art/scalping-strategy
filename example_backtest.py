@@ -174,14 +174,23 @@ def create_strategy_function(strategy: UnifiedStrategy):
             if not indicators:
                 return None
 
+            # Debug: Log RSI extremes
+            rsi = indicators['rsi']
+            if rsi < 30 or rsi > 70:
+                logger.info(f"RSI EXTREME: {rsi:.1f}, Volume: {indicators['recent_volume']:.0f}, MA_short: {indicators['ma_short']:.5f}, MA_long: {indicators['ma_long']:.5f}")
+
             # Check entry criteria (FIXED RSI logic)
-            if not strategy.should_enter_trade(indicators):
+            should_enter = strategy.should_enter_trade(indicators)
+            if not should_enter:
                 return None
 
             # Get direction (FIXED RSI logic)
             direction = strategy.get_trade_direction(indicators)
             if not direction:
+                logger.warning("Entry criteria met but no direction found!")
                 return None
+
+            logger.info(f"TRADE SIGNAL: {direction} - RSI: {rsi:.1f}")
 
             # Calculate position size
             current_price = indicators["price"]
@@ -234,6 +243,10 @@ def run_backtest_csv(csv_file: str, initial_balance: float = 10000):
         enable_agents=False,  # No agents for backtest
         backtest_mode=True,  # Skip OANDA API initialization
     )
+
+    # Lower volume threshold for backtest (sample data has lower volume)
+    strategy.volume_threshold = 100
+    strategy.volatility_min = 0.00001  # Lower volatility requirement
 
     # Initialize backtester
     backtester = Backtester(

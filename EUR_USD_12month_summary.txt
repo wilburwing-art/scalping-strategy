@@ -1,0 +1,14 @@
+======================================================================
+COMPREHENSIVE BACKTEST SUMMARY
+======================================================================
+
+Date Range: 2023-11-07 00:00:00 to 2024-10-31 23:55:00
+Total Candles: 103,680
+Initial Balance: $10,000.00
+Final Balance: $9,548.34
+Total Return: -4.52%
+Total Trades: 95
+Win Rate: 10.5%
+Sharpe Ratio: -0.46
+Max Drawdown: 4.52%
+Profit Factor: 0.04

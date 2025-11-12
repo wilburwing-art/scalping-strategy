@@ -12,7 +12,7 @@ A sophisticated multi-agent AI trading system for forex markets, combining tradi
 - **DO NOT trade real money** without extensive backtesting and paper trading validation
 - The authors assume no liability for trading losses
 
-**Current Status**: 🚀 **Phase 3 Complete** - Production monitoring and optimization implemented. Ready for paper trading validation.
+**Current Status**: 🚀 **Phases 1-3 Complete** - Production trading system with unified strategy. Phase 4 (Advanced Analytics & ML) planned. Ready for backtest validation.
 
 ---
 
@@ -497,16 +497,41 @@ Advanced intelligence and production hardening:
 
 See `PHASE_3_COMPLETE.md` for full details.
 
-### 🔮 Future Enhancements (Phase 4?)
+### 🔮 Phase 4: Advanced Analytics & Machine Learning (PLANNED)
 
-Potential areas for further improvement:
+**Status**: 📋 Planned - see `PHASE_4_PLAN.md` for full details
 
-- [ ] Machine learning models trained on historical trades
-- [ ] Multi-timeframe analysis (5m, 15m, 1h, 4h)
-- [ ] Correlation matrix (prevent over-exposure)
-- [ ] Session filtering (avoid low-volume hours)
-- [ ] Web dashboard for real-time monitoring
-- [ ] Full tick-by-tick backtesting engine
+Phase 4 will transform the system into a professional quant trading platform with:
+
+**Phase 4A: Visualization & Reporting (Week 1-2)**
+- Interactive equity curve with drawdowns
+- Performance dashboard (HTML/PDF reports)
+- Monthly returns heatmap
+- Trade distribution analysis
+
+**Phase 4B: Advanced Backtesting (Week 2-3)**
+- Walk-forward optimization
+- Monte Carlo simulation (10,000+ paths)
+- Parameter sensitivity analysis
+- Overfitting detection
+
+**Phase 4C: Machine Learning (Week 3-5)**
+- Feature engineering (50+ indicators)
+- ML models (XGBoost, Random Forest, Neural Networks)
+- Reinforcement Learning agents (DQN, PPO)
+- Online learning with drift detection
+
+**Phase 4D: Integration (Week 5-6)**
+- ML-enhanced unified strategy
+- Ensemble decision framework
+- A/B testing capabilities
+- Comprehensive ML documentation
+
+**Timeline**: 4-6 weeks (when started)
+**Priority**: MEDIUM (validate current strategy first)
+**Dependencies**: matplotlib, scikit-learn, xgboost, stable-baselines3
+
+See `PHASE_4_PLAN.md` for detailed implementation plan.
 
 ---
 
