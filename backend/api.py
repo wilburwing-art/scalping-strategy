@@ -58,6 +58,46 @@ class StrategyStatus(BaseModel):
     totalTrades: int
     openPositions: int
 
+class AgentScore(BaseModel):
+    name: str
+    confidence: float
+    sentiment: Optional[float] = None
+    reasoning: str
+
+class AISignal(BaseModel):
+    instrument: str
+    action: str  # BUY, SELL, HOLD
+    confidence: float
+    entry_price: Optional[float] = None
+    stop_loss: Optional[float] = None
+    take_profit: Optional[float] = None
+    position_size: Optional[int] = None
+    timestamp: str
+    agents: List[AgentScore]
+    overall_reasoning: str
+
+class AgentStatus(BaseModel):
+    enabled: bool
+    model: str
+    min_confidence: float
+    market_intel_weight: float
+    technical_weight: float
+    risk_weight: float
+    total_analyses: int
+    avg_confidence: float
+    last_analysis: Optional[str] = None
+
+class CostStats(BaseModel):
+    total_tokens: int
+    prompt_tokens: int
+    completion_tokens: int
+    api_calls: int
+    cached_calls: int
+    cache_hit_rate: float
+    estimated_cost: float
+    cost_per_hour: float
+    tokens_per_hour: float
+
 # In-memory storage (replace with database in production)
 current_config = StrategyConfig(
     riskPercent=1.0,
@@ -77,6 +117,54 @@ strategy_status = StrategyStatus(
     lastUpdate=datetime.now().isoformat(),
     totalTrades=0,
     openPositions=0,
+)
+
+# AI agent storage with initial mock data
+recent_ai_signals: List[AISignal] = [
+    AISignal(
+        instrument="EUR_USD",
+        action="BUY",
+        confidence=0.85,
+        entry_price=1.0850,
+        stop_loss=1.0820,
+        take_profit=1.0900,
+        position_size=10000,
+        timestamp=datetime.now().isoformat(),
+        agents=[
+            AgentScore(name="Market Intelligence", confidence=0.80, reasoning="Positive ECB sentiment, EUR strength indicators"),
+            AgentScore(name="Technical Analysis", confidence=0.85, reasoning="Strong uptrend, RSI oversold bounce, MA alignment"),
+            AgentScore(name="Risk Assessment", confidence=0.90, reasoning="Low volatility, favorable R:R ratio 1:2.5")
+        ],
+        overall_reasoning="High-probability long setup: Technical indicators show strong momentum with RSI bounce from oversold, supported by positive market sentiment and low correlation risk."
+    ),
+    AISignal(
+        instrument="GBP_JPY",
+        action="SELL",
+        confidence=0.72,
+        entry_price=189.45,
+        stop_loss=189.95,
+        take_profit=188.70,
+        position_size=8000,
+        timestamp=(datetime.now() - timedelta(minutes=15)).isoformat(),
+        agents=[
+            AgentScore(name="Market Intelligence", confidence=0.65, reasoning="BOJ hawkish stance, risk-off sentiment building"),
+            AgentScore(name="Technical Analysis", confidence=0.75, reasoning="Resistance at 189.50, bearish divergence on 1H"),
+            AgentScore(name="Risk Assessment", confidence=0.75, reasoning="Moderate risk, trending pair with clear levels")
+        ],
+        overall_reasoning="Counter-trend setup at resistance: Price approaching key resistance with divergence signals. Risk managed with tight stop above resistance zone."
+    ),
+]
+
+agent_status = AgentStatus(
+    enabled=current_config.useAgents,
+    model=current_config.agentModel,
+    min_confidence=current_config.minConfidence,
+    market_intel_weight=0.3,
+    technical_weight=0.4,
+    risk_weight=0.3,
+    total_analyses=2,
+    avg_confidence=0.785,
+    last_analysis=datetime.now().isoformat(),
 )
 
 # Helper function to generate mock equity data
@@ -160,6 +248,71 @@ def stop_strategy():
     strategy_status.lastUpdate = datetime.now().isoformat()
     # TODO: Actually stop the strategy
     return {"status": "stopped", "message": "Strategy stopped successfully"}
+
+@app.get("/api/ai-signals", response_model=List[AISignal])
+def get_ai_signals(limit: int = 20):
+    """Get recent AI agent trading signals"""
+    return recent_ai_signals[-limit:] if recent_ai_signals else []
+
+@app.get("/api/agent-status", response_model=AgentStatus)
+def get_agent_status():
+    """Get current AI agent system status"""
+    return agent_status
+
+@app.post("/api/agent-signal")
+def add_ai_signal(signal: AISignal):
+    """Add a new AI signal (called by strategy)"""
+    global recent_ai_signals, agent_status
+
+    recent_ai_signals.append(signal)
+
+    # Keep only last 100 signals
+    if len(recent_ai_signals) > 100:
+        recent_ai_signals = recent_ai_signals[-100:]
+
+    # Update agent status
+    agent_status.total_analyses += 1
+    agent_status.last_analysis = signal.timestamp
+
+    # Update rolling average confidence
+    if agent_status.total_analyses == 1:
+        agent_status.avg_confidence = signal.confidence
+    else:
+        agent_status.avg_confidence = (
+            agent_status.avg_confidence * 0.9 + signal.confidence * 0.1
+        )
+
+    return {"status": "ok", "message": "Signal added"}
+
+@app.get("/api/cost-stats")
+def get_cost_stats():
+    """Get AI token usage and cost statistics"""
+    # Mock data for now - will be populated by strategy
+    return {
+        "total": {
+            "total_tokens": 0,
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "api_calls": 0,
+            "cached_calls": 0,
+            "cache_hit_rate": 0.0,
+            "estimated_cost": 0.0,
+            "cost_per_hour": 0.0,
+            "tokens_per_hour": 0.0
+        },
+        "by_agent": {},
+        "model": current_config.agentModel,
+        "monthly_estimate": {
+            "cost_per_check": 0.0,
+            "daily_cost": 0.0,
+            "monthly_cost": 0.0,
+            "daily_tokens": 0,
+            "monthly_tokens": 0,
+            "within_free_tier": True,
+            "free_tier_limit": 2_500_000,
+            "free_tier_usage_pct": 0.0
+        }
+    }
 
 if __name__ == "__main__":
     import uvicorn

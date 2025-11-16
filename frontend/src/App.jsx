@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Activity, Settings, TrendingUp, BarChart3 } from 'lucide-react'
+import { Activity, Settings, TrendingUp, BarChart3, Brain } from 'lucide-react'
 import PerformanceAnalytics from './components/PerformanceAnalytics'
 import StrategyConfig from './components/StrategyConfig'
+import AIAgents from './components/AIAgents'
 import { cn } from './lib/utils'
 
 function App() {
@@ -9,6 +10,7 @@ function App() {
 
   const navItems = [
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { id: 'ai-agents', label: 'AI Agents', icon: Brain },
     { id: 'config', label: 'Config', icon: Settings },
   ]
 
@@ -64,6 +66,7 @@ function App() {
         {/* Main Content */}
         <main className="flex-1 p-6 overflow-auto">
           {activeTab === 'analytics' && <PerformanceAnalytics />}
+          {activeTab === 'ai-agents' && <AIAgents />}
           {activeTab === 'config' && <StrategyConfig />}
         </main>
       </div>

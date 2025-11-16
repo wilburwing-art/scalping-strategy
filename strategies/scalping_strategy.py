@@ -6,7 +6,7 @@ import numpy as np
 import requests
 from dateutil.parser import parse
 from v20 import Context
-from v20.errors import V20Error
+from v20.errors import V20ConnectionError, V20Timeout
 import configparser
 import os
 import logging
@@ -32,7 +32,7 @@ class ScalpingStrategy:
         # Initialize API context
         self.ctx = Context(
             self.config["hostname"],
-            self.config["token"],
+            token=self.config["token"],
             application="ScalpingStrategy"
         )
         self.account_id = self.config["account_id"]
@@ -67,12 +67,12 @@ class ScalpingStrategy:
     def get_account_details(self):
         """Get current account details."""
         response = self.ctx.account.summary(self.account_id)
-        return response.get("account", None)
+        return response.body.get("account", None)
     
     def get_tradeable_instruments(self):
         """Get list of tradeable instruments."""
         response = self.ctx.account.instruments(self.account_id)
-        return response.get("instruments", [])
+        return response.body.get("instruments", [])
     
     def get_instrument_candles(self, instrument, count=100, granularity="M5"):
         """Get historical candles for an instrument."""
@@ -83,8 +83,8 @@ class ScalpingStrategy:
                 granularity=granularity,
                 price="M"  # Midpoint prices
             )
-            return response.get("candles", [])
-        except V20Error as e:
+            return response.body.get("candles", [])
+        except Exception as e:
             logger.error(f"Error fetching candles for {instrument}: {str(e)}")
             return []
     
@@ -128,18 +128,33 @@ class ScalpingStrategy:
         # Calculate moving averages
         ma_short = close_series.rolling(10).mean().iloc[-1]
         ma_long = close_series.rolling(20).mean().iloc[-1]
-        
+        ma_50 = close_series.rolling(50).mean().iloc[-1] if len(close_series) >= 50 else ma_long
+        ma_200 = close_series.rolling(200).mean().iloc[-1] if len(close_series) >= 200 else ma_long
+
         # Current price
         current_price = close_prices[-1]
-        
+
+        # Calculate volatility as percentage of price
+        volatility = atr / current_price if current_price > 0 else 0
+
+        # Recent high/low
+        recent_high = high_series.iloc[-20:].max()
+        recent_low = low_series.iloc[-20:].max()
+
         return {
             "price": current_price,
+            "close": current_price,
             "avg_volume": avg_volume,
             "recent_volume": recent_volume,
             "atr": atr,
             "rsi": rsi,
             "ma_short": ma_short,
-            "ma_long": ma_long
+            "ma_long": ma_long,
+            "ma_50": ma_50,
+            "ma_200": ma_200,
+            "volatility": volatility,
+            "recent_high": recent_high,
+            "recent_low": recent_low
         }
     
     def check_news_impact(self, instrument):
@@ -256,11 +271,11 @@ class ScalpingStrategy:
             )
             
             # Check if the order was successful
-            if "orderFillTransaction" in response:
-                fill_transaction = response.get("orderFillTransaction")
-                trade_id = fill_transaction.id
+            if "orderFillTransaction" in response.body:
+                fill_transaction = response.body.get("orderFillTransaction")
+                trade_id = str(fill_transaction.id)
                 logger.info(f"Trade executed: {instrument}, {units} units, ID: {trade_id}")
-                
+
                 # Track the trade
                 self.active_trades[trade_id] = {
                     "instrument": instrument,
@@ -268,14 +283,15 @@ class ScalpingStrategy:
                     "entry_price": float(fill_transaction.price),
                     "stop_loss": stop_loss,
                     "take_profit": take_profit,
-                    "time": fill_transaction.time
+                    "time": str(fill_transaction.time)
                 }
                 
                 return trade_id
             else:
-                logger.error(f"Failed to execute trade: {json.dumps(response.body)}")
+                logger.error(f"Failed to execute trade - orderFillTransaction not in response")
+                logger.error(f"Response status: {response.status}, reason: {response.reason}")
                 return None
-        except V20Error as e:
+        except Exception as e:
             logger.error(f"Error executing trade: {str(e)}")
             return None
     
@@ -284,7 +300,7 @@ class ScalpingStrategy:
         try:
             # Get open trades
             response = self.ctx.trade.list_open(self.account_id)
-            open_trades = response.get("trades", [])
+            open_trades = response.body.get("trades", [])
             
             # Update active trades status
             for trade in open_trades:
@@ -302,7 +318,7 @@ class ScalpingStrategy:
                 del self.active_trades[tid]
                 
             return len(self.active_trades)
-        except V20Error as e:
+        except Exception as e:
             logger.error(f"Error monitoring trades: {str(e)}")
             return -1
     
@@ -324,7 +340,7 @@ class ScalpingStrategy:
             else:
                 logger.error(f"Failed to close trade: {json.dumps(response.body)}")
                 return False
-        except V20Error as e:
+        except Exception as e:
             logger.error(f"Error closing trade: {str(e)}")
             return False
     
