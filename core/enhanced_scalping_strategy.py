@@ -22,7 +22,7 @@ import requests
 from datetime import datetime
 from typing import Optional, Dict, Any
 from strategies.scalping_strategy import ScalpingStrategy
-from trading_agents import TradingAgentSystem
+from core.trading_agents import TradingAgentSystem
 
 # Setup logging
 logging.basicConfig(

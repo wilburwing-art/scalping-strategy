@@ -22,7 +22,7 @@ function ConfidenceBadge({ confidence }) {
   return (
     <div className={cn('inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium', bgColor, color)}>
       <span>{label}</span>
-      <span className="font-mono">{formatPercent(confidence, 0)}</span>
+      <span className="font-mono">{formatPercent(confidence * 100, 0)}</span>
     </div>
   )
 }
@@ -66,7 +66,7 @@ function AgentCard({ name, score, icon: Icon, details, status = 'active' }) {
           </div>
         </div>
         <div className="text-right">
-          <div className="text-2xl font-mono font-bold">{formatPercent(score, 0)}</div>
+          <div className="text-2xl font-mono font-bold">{formatPercent(score * 100, 0)}</div>
           <div className="text-xs text-gray-400 mt-0.5">Confidence</div>
         </div>
       </div>
@@ -116,11 +116,11 @@ function SignalCard({ signal }) {
         </div>
       )}
 
-      {signal.reasoning && (
+      {signal.overall_reasoning && (
         <div className="space-y-3">
           <div className="text-xs uppercase tracking-wide text-gray-400">Reasoning</div>
           <div className="text-sm text-gray-300 leading-relaxed bg-background-surface/50 p-3 rounded-lg">
-            {signal.reasoning}
+            {signal.overall_reasoning}
           </div>
         </div>
       )}
@@ -137,12 +137,12 @@ function SignalCard({ signal }) {
                     <div
                       className={cn(
                         'h-full rounded-full transition-all',
-                        agent.score >= 0.6 ? 'bg-bullish' : 'bg-gray-600'
+                        agent.confidence >= 0.6 ? 'bg-bullish' : 'bg-gray-600'
                       )}
-                      style={{ width: `${agent.score * 100}%` }}
+                      style={{ width: `${agent.confidence * 100}%` }}
                     />
                   </div>
-                  <span className="font-mono text-xs w-12 text-right">{formatPercent(agent.score, 0)}</span>
+                  <span className="font-mono text-xs w-12 text-right">{formatPercent(agent.confidence * 100, 0)}</span>
                 </div>
               </div>
             ))}
@@ -259,7 +259,7 @@ function AIAgents() {
           </div>
           <div className="text-3xl font-mono font-bold">
             {signals.length > 0
-              ? formatPercent(signals.reduce((sum, s) => sum + s.confidence, 0) / signals.length, 0)
+              ? formatPercent((signals.reduce((sum, s) => sum + s.confidence, 0) / signals.length) * 100, 0)
               : '0%'
             }
           </div>

@@ -195,25 +195,61 @@ class ScalpingStrategy:
         """Calculate appropriate position size based on risk parameters."""
         if not indicators:
             return 0
-        
-        # Determine stop loss distance in pips
+
+        # Get current price and ATR
         current_price = indicators["price"]
         atr = indicators["atr"]
-        stop_loss_distance = atr * 1.5  # Using 1.5x ATR for stop loss
-        
+        stop_loss_distance_price = atr * 1.5  # Stop loss in price units
+
+        # Convert stop loss from price to pips
+        if 'JPY' in instrument:
+            stop_loss_pips = stop_loss_distance_price * 100
+        else:
+            stop_loss_pips = stop_loss_distance_price * 10000
+
         # Calculate risk amount in account currency
         risk_amount = account_balance * (self.risk_percent / 100)
-        
-        # Calculate position size
-        pip_value = self._calculate_pip_value(instrument, current_price)
-        if pip_value <= 0:
+
+        # Calculate pip value per unit (in account currency)
+        pip_value_per_unit = self._calculate_pip_value(instrument, current_price)
+        if pip_value_per_unit <= 0:
+            logger.error(f"{instrument}: Invalid pip value {pip_value_per_unit}")
             return 0
-            
-        # Position size formula: Risk Amount / (Stop Loss in pips * Pip Value)
-        position_size = risk_amount / (stop_loss_distance * pip_value)
-        
-        # Round down to appropriate precision
-        return self._round_units(instrument, position_size)
+
+        # Position size formula: Risk Amount / (Stop Loss in pips × Pip Value per unit)
+        position_size = risk_amount / (stop_loss_pips * pip_value_per_unit)
+
+        # Enforce minimum position size (1000 units = 0.01 lots)
+        MIN_POSITION_SIZE = 1000
+        if position_size < MIN_POSITION_SIZE:
+            logger.warning(
+                f"{instrument}: Calculated size {position_size:.0f} too small. "
+                f"Using minimum {MIN_POSITION_SIZE} units."
+            )
+            position_size = MIN_POSITION_SIZE
+
+        # Round to nearest 100 units for cleaner execution
+        position_size = self._round_units(instrument, position_size)
+
+        # Log detailed calculation for debugging
+        logger.info(
+            f"{instrument} Position Sizing: "
+            f"Balance=${account_balance:,.0f}, Risk={self.risk_percent}% (${risk_amount:,.2f}), "
+            f"ATR={atr:.5f}, Stop={stop_loss_pips:.1f} pips, "
+            f"PipValue=${pip_value_per_unit:.6f}/unit, "
+            f"→ Size={position_size:,.0f} units"
+        )
+
+        # Validate final size
+        expected_risk = position_size * stop_loss_pips * pip_value_per_unit
+        logger.info(
+            f"{instrument} Risk Validation: "
+            f"Expected risk=${expected_risk:,.2f} "
+            f"(target=${risk_amount:,.2f}, "
+            f"diff={(expected_risk-risk_amount)/risk_amount*100:.1f}%)"
+        )
+
+        return position_size
     
     def _calculate_pip_value(self, instrument, price):
         """Calculate the value of a pip for the given instrument."""
@@ -230,8 +266,11 @@ class ScalpingStrategy:
     
     def _round_units(self, instrument, units):
         """Round units to the appropriate precision for the instrument."""
-        # In practice, you would check the minimum trade size for the instrument
-        return int(units)
+        # Round to nearest 100 units for cleaner execution
+        rounded = int(round(units / 100) * 100)
+
+        # Ensure minimum of 1000 units
+        return max(rounded, 1000)
     
     def calculate_entry_exit_levels(self, instrument, indicators, direction="BUY"):
         """Calculate entry, stop loss, and take profit levels."""
@@ -260,6 +299,47 @@ class ScalpingStrategy:
     
     def execute_trade(self, instrument, units, stop_loss, take_profit):
         """Execute a trade with the specified parameters."""
+        # Pre-trade validation
+        if units < 1000:
+            logger.error(
+                f"TRADE REJECTED - {instrument}: "
+                f"Position size {units} units below minimum (1000). "
+                f"This indicates a position sizing calculation error."
+            )
+            return None
+
+        # Get current price for validation
+        try:
+            pricing = self.ctx.pricing.get(self.account_id, instruments=instrument)
+            current_price = float(pricing.body['prices'][0]['closeoutBid'])
+        except Exception as e:
+            logger.warning(f"Could not get price for validation: {e}")
+            current_price = (stop_loss + take_profit) / 2  # Rough estimate
+
+        # Calculate and validate risk
+        if units > 0:  # Long position
+            stop_pips = abs(current_price - stop_loss) * 10000
+        else:  # Short position
+            stop_pips = abs(stop_loss - current_price) * 10000
+
+        pip_value = self._calculate_pip_value(instrument, current_price)
+        risk_usd = abs(units) * stop_pips * pip_value
+
+        logger.info(
+            f"EXECUTING TRADE - {instrument}: "
+            f"{'LONG' if units > 0 else 'SHORT'} {abs(units):,} units @ ~{current_price:.5f}, "
+            f"Stop={stop_loss:.5f} ({stop_pips:.1f} pips), "
+            f"TP={take_profit:.5f}, "
+            f"Risk=${risk_usd:,.2f}"
+        )
+
+        # Warn if risk is very high
+        if risk_usd > self.account_balance * 0.05:
+            logger.warning(
+                f"{instrument}: High risk detected - ${risk_usd:,.2f} "
+                f"is {risk_usd/self.account_balance*100:.1f}% of account!"
+            )
+
         try:
             # Create a market order with stop loss and take profit
             response = self.ctx.order.market(

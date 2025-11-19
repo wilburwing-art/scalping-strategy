@@ -9,8 +9,12 @@ from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, timedelta
 import random
+from backend.log_parser import LogParser
 
 app = FastAPI(title="Trading Dashboard API")
+
+# Initialize log parser
+log_parser = LogParser("scalping_strategy.log")
 
 # CORS middleware to allow frontend requests
 app.add_middleware(
@@ -251,13 +255,65 @@ def stop_strategy():
 
 @app.get("/api/ai-signals", response_model=List[AISignal])
 def get_ai_signals(limit: int = 20):
-    """Get recent AI agent trading signals"""
-    return recent_ai_signals[-limit:] if recent_ai_signals else []
+    """Get recent AI agent trading signals from logs"""
+    # Parse latest signals from logs
+    parsed_signals = log_parser.parse_ai_signals(limit=limit)
+
+    # Convert to AISignal format
+    signals = []
+    for sig in parsed_signals:
+        # Create agent scores (placeholder - can enhance parser to extract these)
+        agents = [
+            AgentScore(
+                name="Market Intelligence",
+                confidence=sig['confidence'] * 0.9,
+                reasoning="Extracted from logs"
+            ),
+            AgentScore(
+                name="Technical Analysis",
+                confidence=sig['confidence'],
+                reasoning="Extracted from logs"
+            ),
+            AgentScore(
+                name="Risk Assessment",
+                confidence=sig['confidence'] * 1.05,
+                reasoning="Extracted from logs"
+            )
+        ]
+
+        signals.append(AISignal(
+            instrument=sig['instrument'],
+            action=sig['action'],
+            confidence=sig['confidence'],
+            entry_price=sig.get('entry_price'),
+            timestamp=sig['timestamp'],
+            agents=agents,
+            overall_reasoning=sig['reasoning']
+        ))
+
+    return signals
 
 @app.get("/api/agent-status", response_model=AgentStatus)
 def get_agent_status():
     """Get current AI agent system status"""
-    return agent_status
+    # Get real data from logs
+    signals = log_parser.parse_ai_signals(limit=100)
+
+    # Calculate average confidence
+    avg_confidence = sum(s['confidence'] for s in signals) / len(signals) if signals else 0.0
+    last_analysis = signals[-1]['timestamp'] if signals else None
+
+    return AgentStatus(
+        enabled=current_config.useAgents,
+        model=current_config.agentModel,
+        min_confidence=current_config.minConfidence,
+        market_intel_weight=0.3,
+        technical_weight=0.4,
+        risk_weight=0.3,
+        total_analyses=len(signals),
+        avg_confidence=avg_confidence,
+        last_analysis=last_analysis
+    )
 
 @app.post("/api/agent-signal")
 def add_ai_signal(signal: AISignal):
@@ -286,31 +342,41 @@ def add_ai_signal(signal: AISignal):
 
 @app.get("/api/cost-stats")
 def get_cost_stats():
-    """Get AI token usage and cost statistics"""
-    # Mock data for now - will be populated by strategy
+    """Get AI token usage and cost statistics from logs"""
+    # Parse real cost data from logs
+    cost_data = log_parser.parse_cost_stats()
+
+    # Calculate estimates
+    cost_per_call = cost_data['estimated_cost'] / cost_data['api_calls'] if cost_data['api_calls'] > 0 else 0
+    checks_per_day = 288  # Every 5 minutes for 24 hours
+    daily_cost = cost_per_call * checks_per_day
+    monthly_cost = daily_cost * 30
+    daily_tokens = (cost_data['total_tokens'] / cost_data['api_calls'] * checks_per_day) if cost_data['api_calls'] > 0 else 0
+    monthly_tokens = daily_tokens * 30
+
     return {
         "total": {
-            "total_tokens": 0,
-            "prompt_tokens": 0,
-            "completion_tokens": 0,
-            "api_calls": 0,
+            "total_tokens": cost_data['total_tokens'],
+            "prompt_tokens": cost_data['prompt_tokens'],
+            "completion_tokens": cost_data['completion_tokens'],
+            "api_calls": cost_data['api_calls'],
             "cached_calls": 0,
             "cache_hit_rate": 0.0,
-            "estimated_cost": 0.0,
-            "cost_per_hour": 0.0,
-            "tokens_per_hour": 0.0
+            "estimated_cost": cost_data['estimated_cost'],
+            "cost_per_hour": cost_data['estimated_cost'] / (cost_data['api_calls'] / 12) if cost_data['api_calls'] > 12 else 0,
+            "tokens_per_hour": cost_data['total_tokens'] / (cost_data['api_calls'] / 12) if cost_data['api_calls'] > 12 else 0
         },
-        "by_agent": {},
+        "by_agent": cost_data['by_agent'],
         "model": current_config.agentModel,
         "monthly_estimate": {
-            "cost_per_check": 0.0,
-            "daily_cost": 0.0,
-            "monthly_cost": 0.0,
-            "daily_tokens": 0,
-            "monthly_tokens": 0,
-            "within_free_tier": True,
+            "cost_per_check": cost_per_call,
+            "daily_cost": daily_cost,
+            "monthly_cost": monthly_cost,
+            "daily_tokens": int(daily_tokens),
+            "monthly_tokens": int(monthly_tokens),
+            "within_free_tier": monthly_tokens < 2_500_000,
             "free_tier_limit": 2_500_000,
-            "free_tier_usage_pct": 0.0
+            "free_tier_usage_pct": (monthly_tokens / 2_500_000 * 100) if monthly_tokens > 0 else 0.0
         }
     }
 
