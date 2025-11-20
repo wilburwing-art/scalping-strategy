@@ -220,6 +220,19 @@ backtest_results/
 historical_data/
 trade_journal/
 
+# Output directory (all generated files go here)
+outputs/
+temp_data_*.csv
+*.db
+*_backtest_data.csv
+*_equity.csv
+*_trades.csv
+*_sample.csv
+*_summary.txt
+walk_forward_results.json
+*_export.csv
+*_history.json
+
 # Temporary files
 .DS_Store
 *.swp
